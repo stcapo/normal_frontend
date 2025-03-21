@@ -3,21 +3,39 @@ import { Form, Input, Button, Checkbox, Card, Alert, Typography } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios'; // 需要安装axios: npm install axios
 
 const { Title, Text } = Typography;
 
 const Login = () => {
-  const { login, error } = useAuth();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   
   const onFinish = async (values) => {
     setLoading(true);
-    const success = login(values.username, values.password);
-    setLoading(false);
+    setError('');
     
-    if (success) {
-      navigate('/dashboard');
+    try {
+      // 发送跨域请求到SpringBoot后端
+      const response = await axios.post('http://localhost:8080/login', {
+        username: values.username,
+        password: values.password,
+        remember: values.remember
+      });
+      
+      // 如果请求成功，调用login方法并导航到dashboard
+      if (response.data && response.status === 200) {
+        login(values.username, values.password);
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      // 处理错误情况
+      setError(err.response?.data?.message || '登录失败，请检查账号和密码');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
     }
   };
   
